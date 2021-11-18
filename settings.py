@@ -92,7 +92,7 @@ def add_to_startup():
 
     batch = f"""@echo off\n\"{python_exe_filepath}\" \"{spaces_filepath}\""""
 
-    with open(f"spaces.bat", 'w') as file:
+    with open(f"{startup_filepath}\\spaces.bat", 'w') as file:
         file.write(batch)
 
     messagebox.showinfo('Spaces', 'Program added to startup.')
