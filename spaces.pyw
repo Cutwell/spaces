@@ -1,7 +1,7 @@
 from tkinter import Tk
 import pyautogui
 from pyautogui import position, hotkey, moveTo
-from os import system
+from os import system, getenv
 from os.path import exists, getmtime
 from pickle import load
 import time
@@ -10,7 +10,6 @@ from threading import Thread
 pyautogui.FAILSAFE = False
 
 def main(monitor_width, monitor_height, defaults):
-
     # mainloop
     while True:
         # run a worker to listen for hotcorners
@@ -25,8 +24,6 @@ def main(monitor_width, monitor_height, defaults):
         while init_st_mtime == curr_st_mtime:
             curr_st_mtime = getmtime("spaces.pkl")
             time.sleep(0.2)
-
-        print("Settings updated!")
 
         # breaks out after file update
         stop_threads = True
@@ -93,7 +90,6 @@ def load_defaults():
     with open("spaces.pkl", 'rb') as file:
         defaults_list = load(file)
 
-        print(defaults_list)
 
     menu = ["Show desktop", "Show start menu", "Sleep", "Lock screen", "Show applications"]
     menu_functions = [show_desktop, show_start, sleep, screen_lock, show_windows]

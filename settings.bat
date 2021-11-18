@@ -1,2 +1,2 @@
 @echo off
-"venv\\Scripts\\python.exe" "settings.py"
+"venv\\Scripts\\pythonw.exe" "settings.pyw"

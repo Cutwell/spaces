@@ -1,7 +1,7 @@
 from tkinter import Tk, mainloop, Frame, StringVar, messagebox
 from tkinter.ttk import Style, Label, Button, OptionMenu
 from os.path import exists
-from os import getenv, getcwd
+from os import getenv, getcwd, system, remove
 import sys
 from pickle import load, dump
 from functools import partial
@@ -51,6 +51,7 @@ def gui(root, defaults):
 
     # add action buttons
     startup_button  = Button(actions_frame, style="AccentButton", text="Add program to startup", command=add_to_startup)
+    remove_button   = Button(actions_frame, style="AccentButton", text="Remove program from startup", command=remove_from_startup)
     apply_button    = Button(actions_frame, style="AccentButton", text="Apply changes", command=partial(apply_changes, topleft_stringvar, topright_stringvar, bottomleft_stringvar, bottomright_stringvar))
 
     # pack hotcorner options
@@ -74,7 +75,8 @@ def gui(root, defaults):
 
     # pack action buttons
     startup_button.grid(row=0, column=0, padx=5, pady=5)
-    apply_button.grid(row=0, column=1, padx=5, pady=5)
+    remove_button.grid(row=0, column=1, padx=5, pady=5)
+    apply_button.grid(row=0, column=2, padx=5, pady=5)
 
     # pack inner frames
     hotcorner_frame.pack(padx=10, pady=5)
@@ -87,25 +89,34 @@ def gui(root, defaults):
 
 def add_to_startup():
     startup_filepath = f'{getenv("APPDATA")}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup'
-    spaces_filepath = f'{getcwd()}\\spaces.py'
-    python_exe_filepath = sys.executable
-
+    spaces_filepath = f'{getcwd()}\\spaces.pyw'
+    python_exe_filepath = f"{getcwd()}\\venv\\Scripts\\pythonw.exe"
     batch = f"""@echo off\n\"{python_exe_filepath}\" \"{spaces_filepath}\""""
+    vbs = f"CreateObject(\"Wscript.Shell\").Run \"{getcwd()}\\spaces.bat\",0,True"
 
-    with open(f"{startup_filepath}\\spaces.bat", 'w') as file:
+    # batch file to run python script
+    with open("spaces.bat", 'w') as file:
         file.write(batch)
+
+    # visual basic file to run batch file silently
+    with open(f"{startup_filepath}\\spaces.vbs", 'w') as file:
+        file.write(vbs)
 
     messagebox.showinfo('Spaces', 'Program added to startup.')
 
 def apply_changes(topleft_stringvar, topright_stringvar, bottomleft_stringvar, bottomright_stringvar):
     defaults = [topleft_stringvar.get(), topright_stringvar.get(), bottomleft_stringvar.get(), bottomright_stringvar.get()]
 
-    print(defaults)
-
     with open("spaces.pkl", 'wb') as outfile:
         dump(defaults, outfile)
 
     messagebox.showinfo('Spaces', 'Changes saved.')
+
+def remove_from_startup():
+    startup_filepath = f'{getenv("APPDATA")}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup'
+    remove(f"{startup_filepath}\\spaces.bat")
+
+    messagebox.showinfo('Spaces', 'Removed from startup.')
 
 if __name__ == "__main__":
     # initialise defaults
