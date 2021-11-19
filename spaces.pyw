@@ -33,8 +33,7 @@ def main(monitor_width, monitor_height, defaults):
         defaults = load_defaults()
 
 def worker(monitor_width, monitor_height, defaults, stop):
-    default_topleft, default_topright, default_bottomleft, default_bottomright = [item for key, item in defaults.items()]   # extract items from defaults
-    hotcorners = hot(monitor_width, monitor_height, default_topleft, default_topright, default_bottomleft, default_bottomright)
+    hotcorners = hot(monitor_width, monitor_height, *defaults)
 
     while not stop():
         hotcorners.tick()
@@ -86,25 +85,22 @@ def screen_lock(monitor_width, monitor_height, *args):
 def show_start(*args):
     hotkey("win")
 
+def unassigned(*args):
+    return
+
 def load_defaults():
     with open("spaces.pkl", 'rb') as file:
         defaults_list = load(file)
 
-
-    menu = ["Show desktop", "Show start menu", "Sleep", "Lock screen", "Show applications"]
-    menu_functions = [show_desktop, show_start, sleep, screen_lock, show_windows]
+    menu = ["Show desktop", "Show start menu", "Sleep", "Lock screen", "Show applications", "Unassigned"]
+    menu_functions = [show_desktop, show_start, sleep, screen_lock, show_windows, unassigned]
 
     default_topleft     = menu_functions[menu.index(defaults_list[0])]
     default_topright    = menu_functions[menu.index(defaults_list[1])]
     default_bottomleft  = menu_functions[menu.index(defaults_list[2])]
     default_bottomright = menu_functions[menu.index(defaults_list[3])]
 
-    defaults = {
-        defaults_list[0]: default_topleft,
-        defaults_list[1]: default_topright,
-        defaults_list[2]: default_bottomleft,
-        defaults_list[3]: default_bottomright,
-    }
+    defaults = [default_topleft, default_topright, default_bottomleft, default_bottomright]
 
     return defaults
 
@@ -116,12 +112,7 @@ if __name__ == "__main__":
         defaults = load_defaults()
 
     else:
-        defaults = {
-            "Show applications":show_windows,
-            "Show desktop":show_desktop,
-            "Show start menu":show_start,
-            "Lock screen":screen_lock,
-        }
+        defaults = [show_windows, show_desktop, show_start, screen_lock]
 
     monitor_height = root.winfo_screenheight()
     monitor_width = root.winfo_screenwidth()

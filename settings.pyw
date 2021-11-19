@@ -30,7 +30,7 @@ def gui(root, defaults):
     
 
     # add hotcorner options
-    menu = ["Show desktop", "Show start menu", "Sleep", "Lock screen", "Show applications"]
+    menu = ["Show desktop", "Show start menu", "Sleep", "Lock screen", "Show applications", "Unassigned"]
     default_topleft, default_topright, default_bottomleft, default_bottomright = defaults
 
     topleft_stringvar       = StringVar(root, default_topleft)
@@ -114,7 +114,7 @@ def apply_changes(topleft_stringvar, topright_stringvar, bottomleft_stringvar, b
 
 def remove_from_startup():
     startup_filepath = f'{getenv("APPDATA")}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup'
-    remove(f"{startup_filepath}\\spaces.bat")
+    remove(f"{startup_filepath}\\spaces.vbs")
 
     messagebox.showinfo('Spaces', 'Removed from startup.')
 
