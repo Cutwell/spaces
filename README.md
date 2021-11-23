@@ -1,4 +1,4 @@
-# spaces
+# Spaces for Windows 10
  Mac OS hotcorners for windows 10
 
 # Setting up

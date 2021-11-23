@@ -9,34 +9,34 @@ from threading import Thread
 
 pyautogui.FAILSAFE = False
 
-def main(monitor_width, monitor_height, defaults):
+def hotcorners(monitor_width, monitor_height, defaults, stop):
     # mainloop
-    while True:
+    while not stop():
         # run a worker to listen for hotcorners
-        stop_threads = False
-        worker_thread = Thread(target=worker, args=(monitor_width, monitor_height, defaults, lambda: stop_threads))
-        worker_thread.start()
+        stop_threads_beta = False
+        worker_thread_beta = Thread(target=worker, args=(monitor_width, monitor_height, defaults, lambda: stop_threads_beta))
+        worker_thread_beta.start()
 
         # listen for defaults settings update
         init_st_mtime = getmtime("spaces.pkl")
         curr_st_mtime = init_st_mtime
 
-        while init_st_mtime == curr_st_mtime:
+        while init_st_mtime == curr_st_mtime and not stop():
             curr_st_mtime = getmtime("spaces.pkl")
             time.sleep(0.2)
 
         # breaks out after file update
-        stop_threads = True
-        worker_thread.join()
+        stop_threads_beta = True
+        worker_thread_beta.join()
 
         # reset defaults
         defaults = load_defaults()
 
 def worker(monitor_width, monitor_height, defaults, stop):
-    hotcorners = hot(monitor_width, monitor_height, *defaults)
+    app = hot(monitor_width, monitor_height, *defaults)
 
     while not stop():
-        hotcorners.tick()
+        app.tick()
 
 class hot(object):
     def __init__(self, monitor_width, monitor_height, default_topleft, default_topright, default_bottomleft, default_bottomright):
@@ -58,13 +58,13 @@ class hot(object):
             self.prev = (x, y)
 
         if (x, y) == (0, 0):
-            self.topleft(monitor_width, monitor_height)
+            self.topleft(self.monitor_width, self.monitor_height)
         elif (x, y) == (self.monitor_width-1, 0):
-            self.topright(monitor_width, monitor_height)
+            self.topright(self.monitor_width, self.monitor_height)
         elif (x, y) == (0, self.monitor_height-1):
-            self.bottomleft(monitor_width, monitor_height)
+            self.bottomleft(self.monitor_width, self.monitor_height)
         elif (x, y) == (self.monitor_width-1, self.monitor_height-1):
-            self.bottomright(monitor_width, monitor_height)
+            self.bottomright(self.monitor_width, self.monitor_height)
 
 def show_desktop(*args):
     hotkey("win", "d")
@@ -105,16 +105,17 @@ def load_defaults():
     return defaults
 
 if __name__ == "__main__":
-    # initialise defaults
+    # run hotcorners independently
     root = Tk()
+    root.iconbitmap('favicon.ico')
+    root.title('Spaces for Windows 10')
     
     if exists("spaces.pkl"):
         defaults = load_defaults()
-
     else:
         defaults = [show_windows, show_desktop, show_start, screen_lock]
 
     monitor_height = root.winfo_screenheight()
     monitor_width = root.winfo_screenwidth()
 
-    main(monitor_width, monitor_height, defaults)   # silent operation, for execution from startup
+    hotcorners(monitor_width, monitor_height, defaults)   # silent operation, for execution from startup

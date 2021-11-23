@@ -1,0 +1,1 @@
+CreateObject("Wscript.Shell").Run "spaces.bat",0,True

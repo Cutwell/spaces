@@ -1,1 +1,0 @@
-CreateObject("Wscript.Shell").Run "settings.bat",0,True

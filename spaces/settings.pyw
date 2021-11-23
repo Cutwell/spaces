@@ -10,7 +10,8 @@ def gui(root, defaults):
     root.tk.call('source', 'theme/azure.tcl')
     Style().theme_use('azure')
     
-    root.title("Spaces")
+    root.title("Spaces for Windows 10")
+    root.iconbitmap('favicon.ico')
 
     outer_frame = Frame(root)
     outer_frame.pack(fill='both', expand=1, padx=10, pady=10)
@@ -85,11 +86,10 @@ def gui(root, defaults):
     # pack inner frame
     inner_frame.pack(expand=True, fill='both')
 
-    mainloop()
 
 def add_to_startup():
     startup_filepath = f'{getenv("APPDATA")}\\Microsoft\\Windows\\Start Menu\\Programs\\Startup'
-    spaces_filepath = f'{getcwd()}\\spaces.pyw'
+    spaces_filepath = f'{getcwd()}\\main.pyw'
     python_exe_filepath = f"{getcwd()}\\venv\\Scripts\\pythonw.exe"
     batch = f"""@echo off\n\"{python_exe_filepath}\" \"{spaces_filepath}\""""
     vbs = f"CreateObject(\"Wscript.Shell\").Run \"{getcwd()}\\spaces.bat\",0,True"
@@ -119,7 +119,7 @@ def remove_from_startup():
     messagebox.showinfo('Spaces', 'Removed from startup.')
 
 if __name__ == "__main__":
-    # initialise defaults
+    # run settings independently
     root = Tk()
     
     if exists("spaces.pkl"):
