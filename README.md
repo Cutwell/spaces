@@ -1,5 +1,5 @@
-# Spaces for Windows 10
- Mac OS hotcorners for windows 10
+# Hotcorners
+ Mac OSX hotcorners for Windows 10
 
 # Setting up
 - Download spaces and unpack into your desired installation folder.
