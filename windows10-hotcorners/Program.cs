@@ -1,19 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Drawing;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
-using System.Security.Policy;
+﻿using Microsoft.Win32;
+using System;
 using System.Diagnostics;
-using System.Reflection.Emit;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
-using Microsoft.Win32;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace windows10_hotcorners
 {
@@ -23,23 +15,23 @@ namespace windows10_hotcorners
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool GetCursorPos(out POINT lpPoint);
+        private static extern bool GetCursorPos(out POINT lpPoint);
 
         [DllImport("user32.dll")]
-        static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
+        private static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
 
         [DllImport("user32.dll")]
-        static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
+        private static extern IntPtr MonitorFromPoint(POINT pt, MonitorOptions dwFlags);
 
         [StructLayout(LayoutKind.Sequential)]
-        struct POINT
+        private struct POINT
         {
             public int X;
             public int Y;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct RECT
+        private struct RECT
         {
             public int Left;
             public int Top;
@@ -48,7 +40,7 @@ namespace windows10_hotcorners
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        class MONITORINFO
+        private class MONITORINFO
         {
             public int cbSize = Marshal.SizeOf(typeof(MONITORINFO));
             public RECT rcMonitor;
@@ -56,36 +48,41 @@ namespace windows10_hotcorners
             public int dwFlags;
         }
 
-        enum MonitorOptions
+        private enum MonitorOptions
         {
             MONITOR_DEFAULTTONULL = 0,
             MONITOR_DEFAULTTOPRIMARY = 1,
             MONITOR_DEFAULTTONEAREST = 2
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.Run(new MainForm());
         }
 
-        class MainForm : Form
+        private class MainForm : Form
         {
             private bool isCursorInCorner = false;
-            private System.Windows.Forms.Label positionLabel;
-            private System.Windows.Forms.ComboBox topLeftComboBox;
-            private System.Windows.Forms.ComboBox topRightComboBox;
-            private System.Windows.Forms.ComboBox bottomLeftComboBox;
-            private System.Windows.Forms.ComboBox bottomRightComboBox;
-            private Timer timer;
-            private NotifyIcon notifyIcon;
-            private ContextMenu contextMenu;
-            private MenuItem settingsMenuItem;
-            private MenuItem quitMenuItem;
-            private System.Windows.Forms.Button startupButton;
+            private readonly System.Windows.Forms.Label positionLabel;
+            private readonly System.Windows.Forms.ComboBox topLeftComboBox;
+            private readonly System.Windows.Forms.ComboBox topRightComboBox;
+            private readonly System.Windows.Forms.ComboBox bottomLeftComboBox;
+            private readonly System.Windows.Forms.ComboBox bottomRightComboBox;
+            private readonly Timer timer;
+            private readonly NotifyIcon notifyIcon;
+            private readonly ContextMenu contextMenu;
+            private readonly MenuItem settingsMenuItem;
+            private readonly MenuItem quitMenuItem;
+            private readonly System.Windows.Forms.Button startupButton;
             private bool isStartupEnabled;
             private string settingsFilePath;
-            private Font Normal = new Font("Tahoma", 10, FontStyle.Regular);
+            private readonly Font Normal = new Font("Tahoma", 10, FontStyle.Regular);
+            private const int WH_MOUSE_LL = 14;
+            private const int WH_MOUSE = 7;
+            private const int WM_MOUSEMOVE = 0x0200;
+            private readonly LowLevelMouseProc mouseProc;
+            private readonly IntPtr mouseHookHandle;
 
             public MainForm()
             {
@@ -98,6 +95,7 @@ namespace windows10_hotcorners
                 FormBorderStyle = FormBorderStyle.FixedSingle;
                 MaximizeBox = false;
                 MinimizeBox = true;
+
 
                 // Get the relative path to the icon file
                 string iconPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "full-screen.ico");
@@ -114,9 +112,11 @@ namespace windows10_hotcorners
                 Paint += MainForm_Paint;
 
                 // Create the NotifyIcon control
-                notifyIcon = new NotifyIcon();
-                notifyIcon.Text = "Windows10 Hotcorners";
-                notifyIcon.Visible = true;
+                notifyIcon = new NotifyIcon
+                {
+                    Text = "Windows10 Hotcorners",
+                    Visible = true
+                };
 
                 // Check if the icon file exists
                 if (File.Exists(iconPath))
@@ -131,8 +131,8 @@ namespace windows10_hotcorners
                 quitMenuItem = new MenuItem("Quit", QuitMenuItem_Click);
 
                 // Add the menu items to the context menu
-                contextMenu.MenuItems.Add(settingsMenuItem);
-                contextMenu.MenuItems.Add(quitMenuItem);
+                _ = contextMenu.MenuItems.Add(settingsMenuItem);
+                _ = contextMenu.MenuItems.Add(quitMenuItem);
 
                 // Assign the context menu to the NotifyIcon
                 notifyIcon.ContextMenu = contextMenu;
@@ -149,11 +149,13 @@ namespace windows10_hotcorners
                 // Add the FormClosing event handler for the form
                 FormClosing += MainForm_FormClosing;
 
-                positionLabel = new System.Windows.Forms.Label();
-                positionLabel.Text = "Set actions for each corner: ";
-                positionLabel.AutoSize = true;
-                positionLabel.Font = Normal;
-                positionLabel.Location = new Point(180 - 152, 64 - 56);
+                positionLabel = new System.Windows.Forms.Label
+                {
+                    Text = "Set actions for each corner: ",
+                    AutoSize = true,
+                    Font = Normal,
+                    Location = new Point(180 - 152, 64 - 56)
+                };
 
                 topLeftComboBox = CreateComboBox(new Point(180 - 152, 64 - 23));
                 topRightComboBox = CreateComboBox(new Point(180 + 130, 64 - 23));
@@ -170,10 +172,12 @@ namespace windows10_hotcorners
                 LoadSettings();
 
                 // Create the startup button
-                startupButton = new System.Windows.Forms.Button();
-                startupButton.Text = "Add to Windows Startup";
-                startupButton.Location = new System.Drawing.Point(180 - 152, 64 + 112);
-                startupButton.Width = 232; // Set the desired width
+                startupButton = new System.Windows.Forms.Button
+                {
+                    Text = "Add to Windows Startup",
+                    Location = new System.Drawing.Point(180 - 152, 64 + 112),
+                    Width = 232 // Set the desired width
+                };
                 startupButton.Click += StartupButton_Click;
                 startupButton.Font = Normal;
                 startupButton.FlatStyle = FlatStyle.Flat;
@@ -186,10 +190,9 @@ namespace windows10_hotcorners
                 // Update the button text based on the current startup status
                 UpdateStartupButtonText();
 
-                timer = new Timer();
-                timer.Interval = 100; // Update interval in milliseconds
-                timer.Tick += Timer_Tick;
-                timer.Start();
+                // Set up the low-level mouse hook
+                mouseProc = MouseHookCallback;
+                mouseHookHandle = SetMouseHook(mouseProc);
 
                 // Set the initial window state
                 WindowState = FormWindowState.Normal;
@@ -240,7 +243,7 @@ namespace windows10_hotcorners
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Error loading settings: " + ex.Message);
+                        _ = MessageBox.Show("Error loading settings: " + ex.Message);
                     }
                 }
             }
@@ -260,7 +263,7 @@ namespace windows10_hotcorners
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error saving settings: " + ex.Message);
+                    _ = MessageBox.Show("Error saving settings: " + ex.Message);
                 }
             }
 
@@ -268,7 +271,7 @@ namespace windows10_hotcorners
             {
                 using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
                 {
-                    return (registryKey.GetValue(Application.ProductName) != null);
+                    return registryKey.GetValue(Application.ProductName) != null;
                 }
             }
 
@@ -363,41 +366,103 @@ namespace windows10_hotcorners
 
             private System.Windows.Forms.ComboBox CreateComboBox(Point location)
             {
-                System.Windows.Forms.ComboBox comboBox = new System.Windows.Forms.ComboBox();
-                comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+                System.Windows.Forms.ComboBox comboBox = new System.Windows.Forms.ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList
+                };
                 comboBox.Items.AddRange(new string[] { "", "Lock", "Show Desktop", "Show Open Windows", "Show Start Menu" });
                 comboBox.Location = location;
                 comboBox.Size = new Size(150, 21);
                 comboBox.FlatStyle = FlatStyle.Flat;
                 comboBox.Font = Normal;
                 comboBox.BackColor = Color.WhiteSmoke;
-                comboBox.SelectedIndexChanged += ComboBox_SelectedIndexChanged;
 
                 return comboBox;
             }
 
-            private void Timer_Tick(object sender, EventArgs e)
+            protected override void OnClosed(EventArgs e)
             {
-                POINT currentMousePosition = GetCurrentMousePosition();
+                // Remove the low-level mouse hook when the form is closed
+                RemoveMouseHook(mouseHookHandle);
 
-                if (currentMousePosition.X != previousMousePosition.X || currentMousePosition.Y != previousMousePosition.Y)
+                base.OnClosed(e);
+            }
+
+            private IntPtr SetMouseHook(LowLevelMouseProc proc)
+            {
+                using (ProcessModule currentModule = Process.GetCurrentProcess().MainModule)
                 {
-                    (ScreenCorner corner, string action, bool cursorFlag) = GetScreenCorner(currentMousePosition, topLeftComboBox, topRightComboBox, bottomLeftComboBox, bottomRightComboBox);
+                    // Set the low-level mouse hook
+                    IntPtr hookHandle = SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(currentModule.ModuleName), 0);
 
-                    if (cursorFlag && !isCursorInCorner)
-                    {
-                        ExecuteAction(action);
-                    }
+                    // Set the normal mouse hook to track mouse events globally
+                    _ = SetWindowsHookEx(WH_MOUSE, proc, IntPtr.Zero, GetCurrentThreadId());
 
-                    isCursorInCorner = cursorFlag;
-
-                    //positionLabel.Text = $"Mouse Position: X: {currentMousePosition.X}, Y: {currentMousePosition.Y}, Corner: {corner}, Action: {action}, InCorner: {isCursorInCorner}";
-
-                    previousMousePosition = currentMousePosition;
+                    return hookHandle;
                 }
             }
 
-            void ExecuteAction(string action)
+            private void RemoveMouseHook(IntPtr hookHandle)
+            {
+                // Remove the low-level mouse hook
+                _ = UnhookWindowsHookEx(hookHandle);
+
+                // Remove the normal mouse hook
+                _ = UnhookWindowsHookEx(mouseHookHandle);
+            }
+
+            private IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+            {
+                if (nCode >= 0 && wParam == (IntPtr)WM_MOUSEMOVE)
+                {
+                    // Extract the mouse position from the lParam parameter
+                    int x = Cursor.Position.X;
+                    int y = Cursor.Position.Y;
+
+                    POINT currentMousePosition;
+                    currentMousePosition.X = x;
+                    currentMousePosition.Y = y;
+
+                    if (currentMousePosition.X != previousMousePosition.X || currentMousePosition.Y != previousMousePosition.Y)
+                    {
+                        (_, string action, bool cursorFlag) = GetScreenCorner(currentMousePosition, topLeftComboBox, topRightComboBox, bottomLeftComboBox, bottomRightComboBox);
+
+                        if (cursorFlag && !isCursorInCorner)
+                        {
+                            ExecuteAction(action);
+                        }
+
+                        isCursorInCorner = cursorFlag;
+
+                        //positionLabel.Text = $"Mouse Position: X: {currentMousePosition.X}, Y: {currentMousePosition.Y}, Corner: {corner}, Action: {action}, InCorner: {isCursorInCorner}";
+
+                        previousMousePosition = currentMousePosition;
+                    }
+                }
+
+                return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
+            }
+
+            // Low-level mouse hook delegate
+            private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+            // Windows API function declarations
+            [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+            private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+            [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+            private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+            [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+            private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+            [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+            private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+            [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+            private static extern uint GetCurrentThreadId();
+
+            private void ExecuteAction(string action)
             {
                 switch (action)
                 {
@@ -432,9 +497,9 @@ namespace windows10_hotcorners
             public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
 
             // Method to execute the Sleep action
-            void SetSuspendState()
+            private void SetSuspendState()
             {
-                SetSuspendState(false, true, false);
+                _ = SetSuspendState(false, true, false);
             }
 
             // P/Invoke to execute the Show desktop action
@@ -451,7 +516,7 @@ namespace windows10_hotcorners
             public static extern bool LockWorkStation();
 
             // Method to execute the Show desktop action
-            void ShowDesktop()
+            private void ShowDesktop()
             {
                 const int VK_LWIN = 0x5B;
                 const int VK_D = 0x44;
@@ -470,23 +535,23 @@ namespace windows10_hotcorners
             }
 
             // Method to execute the Show Start Menu action
-            void ShowStartMenu()
+            private void ShowStartMenu()
             {
                 const int SW_SHOW = 5;
                 IntPtr hWnd = FindWindow("Shell_TrayWnd", null);
-                ShowWindow(hWnd, SW_SHOW);
+                _ = ShowWindow(hWnd, SW_SHOW);
                 keybd_event(0x5B, 0, 0, 0); // Press Win key
                 keybd_event(0x5B, 0, 0x2, 0); // Release Win key
             }
 
             // Method to execute the Lock Desktop action
-            void LockDesktop()
+            private void LockDesktop()
             {
-                LockWorkStation();
+                _ = LockWorkStation();
             }
 
             // Method to execute the Show Windows action
-            void ShowWindows()
+            private void ShowWindows()
             {
                 const int VK_LWIN = 0x5B;
                 const int VK_TAB = 0x09;
@@ -505,54 +570,26 @@ namespace windows10_hotcorners
             }
 
 
-            private void ComboBox_SelectedIndexChanged(object sender, EventArgs e)
-            {
-                System.Windows.Forms.ComboBox comboBox = (System.Windows.Forms.ComboBox)sender;
-                string selectedOption = comboBox.SelectedItem.ToString();
-
-                // Perform action based on the selected option
-                switch (selectedOption)
-                {
-                    case "Sleep":
-                        // Put code here to perform sleep action
-                        break;
-                    case "Show Desktop":
-                        // Put code here to perform show desktop action
-                        break;
-                    case "Show Start Menu":
-                        // Put code here to perform show start menu action
-                        break;
-                    case "":
-                        break;
-                }
-            }
-
             protected override void OnFormClosing(FormClosingEventArgs e)
             {
                 // Save the settings when the form is closing
                 SaveSettings();
                 base.OnFormClosing(e);
-                timer.Stop();
             }
 
-            static POINT GetCurrentMousePosition()
-            {
-                POINT cursorPosition;
-                GetCursorPos(out cursorPosition);
-                return cursorPosition;
-            }
-
-            static (ScreenCorner, string, bool) GetScreenCorner(POINT mousePosition, System.Windows.Forms.ComboBox topLeftComboBox, System.Windows.Forms.ComboBox topRightComboBox, System.Windows.Forms.ComboBox bottomLeftComboBox, System.Windows.Forms.ComboBox bottomRightComboBox)
+            private static (ScreenCorner, string, bool) GetScreenCorner(POINT mousePosition, System.Windows.Forms.ComboBox topLeftComboBox, System.Windows.Forms.ComboBox topRightComboBox, System.Windows.Forms.ComboBox bottomLeftComboBox, System.Windows.Forms.ComboBox bottomRightComboBox)
             {
                 IntPtr monitorHandle = MonitorFromPoint(mousePosition, MonitorOptions.MONITOR_DEFAULTTONEAREST);
-                MONITORINFO monitorInfo = new MONITORINFO();
-                monitorInfo.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+                MONITORINFO monitorInfo = new MONITORINFO
+                {
+                    cbSize = Marshal.SizeOf(typeof(MONITORINFO))
+                };
 
                 if (GetMonitorInfo(monitorHandle, monitorInfo))
                 {
                     Rectangle monitorRect = new Rectangle(monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Top, monitorInfo.rcMonitor.Right - monitorInfo.rcMonitor.Left, monitorInfo.rcMonitor.Bottom - monitorInfo.rcMonitor.Top);
 
-                    bool isInCorner = false; // Flag for cursor being in a corner
+                    bool isInCorner;
 
                     // Check if mouse is within 2 pixels of the corner
                     if (Math.Abs(mousePosition.X - monitorRect.Left) <= 2 && Math.Abs(mousePosition.Y - monitorRect.Top) <= 2)
@@ -584,7 +621,7 @@ namespace windows10_hotcorners
                 return (ScreenCorner.Unknown, "", false);
             }
 
-            static string GetAssociatedAction(ScreenCorner corner, System.Windows.Forms.ComboBox comboBox)
+            private static string GetAssociatedAction(ScreenCorner corner, System.Windows.Forms.ComboBox comboBox)
             {
                 string action = "";
 
@@ -602,7 +639,7 @@ namespace windows10_hotcorners
             }
         }
 
-        enum ScreenCorner
+        private enum ScreenCorner
         {
             TopLeft,
             TopRight,
