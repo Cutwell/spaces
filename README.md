@@ -16,5 +16,4 @@
 - To remove spaces from your system manually, simply delete the install directory and `C:\Users\USER\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\spaces.vbs`
 
 # License
-Licensed under MIT.
-Azure Tkinter theme licensed under Lesser GPL by [@rdbende](https://github.com/rdbende/Azure-ttk-theme)
+<a href="https://www.flaticon.com/free-icons/full-screen" title="full screen icons">Full screen icons created by itim2101 - Flaticon</a>
