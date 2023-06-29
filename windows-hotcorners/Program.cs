@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace windows10_hotcorners
+namespace windows_hotcorners
 {
     internal static class Program
     {
@@ -86,7 +86,7 @@ namespace windows10_hotcorners
 
             public MainForm()
             {
-                Text = "Windows10 Hotcorners";
+                Text = "Windows Hotcorners";
                 Width = 512;
                 Height = 272;
                 BackColor = Color.White;
@@ -114,7 +114,7 @@ namespace windows10_hotcorners
                 // Create the NotifyIcon control
                 notifyIcon = new NotifyIcon
                 {
-                    Text = "Windows10 Hotcorners",
+                    Text = "Windows Hotcorners",
                     Visible = true
                 };
 
