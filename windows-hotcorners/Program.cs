@@ -74,7 +74,6 @@ namespace windows_hotcorners
             private readonly ContextMenu contextMenu;
             private readonly MenuItem settingsMenuItem;
             private readonly MenuItem quitMenuItem;
-            private readonly System.Windows.Forms.Button startupButton;
             private bool isStartupEnabled;
             private string settingsFilePath;
             private readonly Font Normal = new Font("Tahoma", 10, FontStyle.Regular);
@@ -83,12 +82,14 @@ namespace windows_hotcorners
             private const int WM_MOUSEMOVE = 0x0200;
             private readonly LowLevelMouseProc mouseProc;
             private readonly IntPtr mouseHookHandle;
+            private readonly CheckBox toggleStartup;
+            private readonly CheckBox togglePauseOnFullscreen;
 
             public MainForm()
             {
                 Text = "Windows Hotcorners";
                 Width = 512;
-                Height = 272;
+                Height = 312;
                 BackColor = Color.White;
                 ForeColor = Color.Black;
 
@@ -173,34 +174,37 @@ namespace windows_hotcorners
                 bottomLeftComboBox = CreateComboBox(new Point(180 - 152, 64 + 74));
                 bottomRightComboBox = CreateComboBox(new Point(180 + 130, 64 + 74));
 
+                toggleStartup = new CheckBox
+                {
+                    Text = "Run on Windows Startup",
+                    Location = new System.Drawing.Point(180 - 152, 64 + 128),
+                    Width = 256,
+                };
+                toggleStartup.CheckedChanged += ToggleStartup_CheckedChanged;
+
+                // Create the toggle button
+                togglePauseOnFullscreen = new CheckBox
+                {
+                    Text = "Pause tracking if another app is fullscreen",
+                    Location = new System.Drawing.Point(180 - 152, 64 + 164),
+                    Width = 256,
+                };
+
                 Controls.Add(positionLabel);
                 Controls.Add(monitorLabel);
                 Controls.Add(topLeftComboBox);
                 Controls.Add(topRightComboBox);
                 Controls.Add(bottomLeftComboBox);
                 Controls.Add(bottomRightComboBox);
+                Controls.Add(toggleStartup);
+                Controls.Add(togglePauseOnFullscreen);
+
 
                 // Load the saved values from the settings file
                 LoadSettings();
 
-                // Create the startup button
-                startupButton = new System.Windows.Forms.Button
-                {
-                    Text = "Add to Windows Startup",
-                    Location = new System.Drawing.Point(180 - 152, 64 + 128),
-                    Width = 232 // Set the desired width
-                };
-                startupButton.Click += StartupButton_Click;
-                startupButton.Font = Normal;
-                startupButton.FlatStyle = FlatStyle.Flat;
-                startupButton.BackColor = Color.WhiteSmoke;
-                Controls.Add(startupButton);
-
                 // Check if the program is currently set to start on startup
                 isStartupEnabled = IsStartupEnabled();
-
-                // Update the button text based on the current startup status
-                UpdateStartupButtonText();
 
                 // Set up the low-level mouse hook
                 mouseProc = MouseHookCallback;
@@ -210,6 +214,69 @@ namespace windows_hotcorners
                 WindowState = FormWindowState.Normal;
                 ShowInTaskbar = true;
             }
+
+            [DllImport("user32.dll")]
+            public static extern IntPtr GetForegroundWindow();
+
+            [DllImport("user32.dll")]
+            public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+            [DllImport("user32.dll")]
+            public static extern IntPtr GetDesktopWindow();
+
+            [DllImport("user32.dll")]
+            public static extern bool EnumThreadWindows(int dwThreadId, EnumThreadDelegate lpfn, IntPtr lParam);
+
+            [DllImport("user32.dll")]
+            public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+            [DllImport("user32.dll")]
+            public static extern bool IsWindowVisible(IntPtr hWnd);
+
+            [DllImport("user32.dll")]
+            public static extern bool IsWindowEnabled(IntPtr hWnd);
+
+            public delegate bool EnumThreadDelegate(IntPtr hWnd, IntPtr lParam);
+
+            [StructLayout(LayoutKind.Sequential)]
+            public struct RECT
+            {
+                public int Left;
+                public int Top;
+                public int Right;
+                public int Bottom;
+            }
+
+            public static bool IsAnyWindowFullscreen(int processId)
+            {
+                bool isFullscreen = false;
+
+                EnumThreadWindows(processId, (hWnd, lParam) =>
+                {
+                    if (IsWindowVisible(hWnd) && IsWindowEnabled(hWnd))
+                    {
+                        if (IsWindowFullscreen(hWnd))
+                        {
+                            isFullscreen = true;
+                            return false; // Stop enumeration
+                        }
+                    }
+
+                    return true; // Continue enumeration
+                }, IntPtr.Zero);
+
+                return isFullscreen;
+            }
+
+            public static bool IsWindowFullscreen(IntPtr hWnd)
+            {
+                GetWindowRect(hWnd, out var rect);
+                int screenWidth = Screen.PrimaryScreen.Bounds.Width;
+                int screenHeight = Screen.PrimaryScreen.Bounds.Height;
+
+                return (rect.Left == 0 && rect.Top == 0 && rect.Right == screenWidth && rect.Bottom == screenHeight);
+            }
+
 
             private void LoadSettings()
             {
@@ -248,6 +315,9 @@ namespace windows_hotcorners
                                         case "BottomRight":
                                             bottomRightComboBox.SelectedItem = value;
                                             break;
+                                        case "PauseOnFullscreen":
+                                            togglePauseOnFullscreen.Checked = value == "true";
+                                            break;
                                     }
                                 }
                             }
@@ -271,6 +341,8 @@ namespace windows_hotcorners
                         writer.WriteLine("TopRight=" + topRightComboBox.SelectedItem);
                         writer.WriteLine("BottomLeft=" + bottomLeftComboBox.SelectedItem);
                         writer.WriteLine("BottomRight=" + bottomRightComboBox.SelectedItem);
+                        string pause = togglePauseOnFullscreen.Checked ? "true" : "false";
+                        writer.WriteLine("PauseOnFullscreen=" + pause);
                     }
                 }
                 catch (Exception ex)
@@ -302,16 +374,11 @@ namespace windows_hotcorners
                 }
             }
 
-            private void UpdateStartupButtonText()
-            {
-                startupButton.Text = isStartupEnabled ? "Remove from Windows Startup" : "Add to Windows Startup";
-            }
 
-            private void StartupButton_Click(object sender, EventArgs e)
+            private void ToggleStartup_CheckedChanged(object sender, EventArgs e)
             {
                 isStartupEnabled = !isStartupEnabled;
                 SetStartupEnabled(isStartupEnabled);
-                UpdateStartupButtonText();
             }
 
             private void NotifyIcon_DoubleClick(object sender, EventArgs e)
@@ -439,7 +506,14 @@ namespace windows_hotcorners
                     {
                         (_, string action, bool cursorFlag) = GetScreenCorner(currentMousePosition, topLeftComboBox, topRightComboBox, bottomLeftComboBox, bottomRightComboBox);
 
-                        if (cursorFlag && !isCursorInCorner)
+                        bool pauseFlag = false;
+                        if (togglePauseOnFullscreen.Checked)
+                        {
+                            IntPtr foregroundWindow = GetForegroundWindow();
+                            pauseFlag = IsAnyWindowFullscreen(Process.GetCurrentProcess().Id);
+                        }
+
+                        if (cursorFlag && !isCursorInCorner && !pauseFlag)
                         {
                             ExecuteAction(action);
                         }
