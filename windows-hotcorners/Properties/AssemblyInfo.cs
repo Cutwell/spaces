@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Windows10 Hotcorners")]
-[assembly: AssemblyDescription("Mac OSX hotcorners for Windows 10")]
+[assembly: AssemblyTitle("Windows Hotcorners")]
+[assembly: AssemblyDescription("Mac OSX hotcorners for Windows")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Zachary Smith")]
-[assembly: AssemblyProduct("windows10-hotcorners")]
+[assembly: AssemblyProduct("windows-hotcorners")]
 [assembly: AssemblyCopyright("Copyright ©  2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
