@@ -65,11 +65,11 @@ namespace windows10_hotcorners
         {
             private bool isCursorInCorner = false;
             private readonly System.Windows.Forms.Label positionLabel;
+            private readonly System.Windows.Forms.Label monitorLabel;
             private readonly System.Windows.Forms.ComboBox topLeftComboBox;
             private readonly System.Windows.Forms.ComboBox topRightComboBox;
             private readonly System.Windows.Forms.ComboBox bottomLeftComboBox;
             private readonly System.Windows.Forms.ComboBox bottomRightComboBox;
-            private readonly Timer timer;
             private readonly NotifyIcon notifyIcon;
             private readonly ContextMenu contextMenu;
             private readonly MenuItem settingsMenuItem;
@@ -88,7 +88,7 @@ namespace windows10_hotcorners
             {
                 Text = "Windows10 Hotcorners";
                 Width = 512;
-                Height = 256;
+                Height = 272;
                 BackColor = Color.White;
                 ForeColor = Color.Black;
 
@@ -151,10 +151,21 @@ namespace windows10_hotcorners
 
                 positionLabel = new System.Windows.Forms.Label
                 {
-                    Text = "Set actions for each corner: ",
+                    Text = "Set actions for each corner (autosaved on exit):",
                     AutoSize = true,
                     Font = Normal,
                     Location = new Point(180 - 152, 64 - 56)
+                };
+
+                Size monitorLabelText = TextRenderer.MeasureText("Monitor 1", Normal);
+                monitorLabel = new System.Windows.Forms.Label
+                {
+                    Text = "Monitor 1",
+                    AutoSize = true,
+                    Font = Normal,
+                    BackColor = Color.FromArgb(200, 200, 255),
+                    Location = new Point(180 + 64 - (monitorLabelText.Width / 2), 64 + 36 - (monitorLabelText.Height / 2)),
+                    TextAlign = ContentAlignment.MiddleCenter,
                 };
 
                 topLeftComboBox = CreateComboBox(new Point(180 - 152, 64 - 23));
@@ -163,6 +174,7 @@ namespace windows10_hotcorners
                 bottomRightComboBox = CreateComboBox(new Point(180 + 130, 64 + 74));
 
                 Controls.Add(positionLabel);
+                Controls.Add(monitorLabel);
                 Controls.Add(topLeftComboBox);
                 Controls.Add(topRightComboBox);
                 Controls.Add(bottomLeftComboBox);
@@ -175,7 +187,7 @@ namespace windows10_hotcorners
                 startupButton = new System.Windows.Forms.Button
                 {
                     Text = "Add to Windows Startup",
-                    Location = new System.Drawing.Point(180 - 152, 64 + 112),
+                    Location = new System.Drawing.Point(180 - 152, 64 + 128),
                     Width = 232 // Set the desired width
                 };
                 startupButton.Click += StartupButton_Click;
